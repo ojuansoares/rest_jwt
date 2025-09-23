@@ -1,55 +1,81 @@
-# Modern Purple Login App
+# API com autenticação JWT
 
-Uma aplicação React moderna com sistema de autenticação, desenvolvida com design elegante em tons de roxo.
+Uma aplicação React + Flask moderna com sistema de autenticação
 
 ## 🚀 Tecnologias Utilizadas
 
+### Frontend
 - **React** - Biblioteca JavaScript para construção da interface
 - **React Router** - Roteamento entre páginas
 - **CSS3** - Estilização moderna com gradientes e animações
 - **LocalStorage** - Armazenamento local para persistência de dados
 
+### Backend
+- **Flask** - Framework web em Python
+- **Flask-CORS** - Liberação de requisições entre domínios (frontend → backend)
+- **Flask-JWT-Extended** - Autenticação com JWT
+- **Werkzeug Security** - Hash de senha seguro (PBKDF2 + SHA256)
+- **os** - Variáveis de ambiente (chave secreta JWT)
+
 ## ✨ Funcionalidades
 
+### Frontend
 - **Tela de Login** - Interface moderna com validação de formulário
 - **Home Page** - Dashboard personalizado com informações do usuário
 - **Autenticação** - Sistema de login/logout com persistência
 - **Design Responsivo** - Adaptável a diferentes tamanhos de tela
-- **Animações Suaves** - Transições e efeitos visuais elegantes
 
-## 🎨 Design
+### Backend
+- **Login de Usuário (`/api/login`)**  
+  Recebe `username` e `password`, valida credenciais e retorna um **JWT válido**.  
+  - Se o login for inválido → retorna erro 401  
+  - Se válido → retorna `access_token`
 
-O projeto utiliza uma paleta de cores roxa sofisticada com:
-- Gradientes suaves e modernos
-- Tipografia Inter para melhor legibilidade
-- Cards com sombras e efeitos hover
-- Animações CSS para uma experiência fluida
+- **Rota Protegida (`/api/profile`)**  
+  Apenas acessível com **token válido** no cabeçalho da requisição.  
+  Retorna os dados do usuário logado e mensagem de boas-vindas.
+
+- **Segurança de Senhas**  
+  Senhas armazenadas com **hash seguro** (`generate_password_hash`), nunca em texto puro.  
+  Validação feita com `check_password_hash`.
 
 ## 📦 Como Executar
 
 1. Clone o repositório
-\`\`\`bash
+```bash
 git clone [url-do-repositorio]
 cd modern-purple-login-app
-\`\`\`
+```
 
-2. Instale as dependências
-\`\`\`bash
+2. Instale as dependências do frontend
+
+```bash
 npm install
-\`\`\`
+```
 
-3. Execute o projeto
-\`\`\`bash
+3. Execute o frontend
+
+```bash
 npm start
-\`\`\`
+```
 
 4. Acesse no navegador: `http://localhost:3000`
 
-## 📱 Screenshots
+5. Execute o backend (Flask)
 
-### Tela de Login
+```bash
+python app.py
+```
 
+6. O backend ficará disponível em: `http://localhost:5000`
 
-### Home Page
+## 📌 Fluxo de Autenticação
 
+1. Usuário envia `username` e `password` para `/api/login`.
+2. Se válido, recebe um **JWT**.
+3. Para acessar `/api/profile`, o token deve ser enviado no header:
 
+   ```http
+   Authorization: Bearer <token>
+   ```
+4. O backend valida o token e retorna os dados do usuário logado.
