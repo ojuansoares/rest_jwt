@@ -44,12 +44,13 @@ Uma aplicação React + Flask moderna com sistema de autenticação
 1. Clone o repositório
 ```bash
 git clone [url-do-repositorio]
-cd modern-purple-login-app
+cd rest_jwt
 ```
 
 2. Instale as dependências do frontend
 
 ```bash
+cd front
 npm install
 ```
 
@@ -72,7 +73,9 @@ JWT_SECRET_KEY=uma_chave_super_secreta_aqui
 6. Execute o backend (Flask)
 
 ```bash
-python app.py
+cd back
+pip install -r requirements.txt
+flask run
 ```
 
 7. O backend ficará disponível em: `http://localhost:5000`

@@ -2,12 +2,18 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
+from dotenv import load_dotenv
 import os
 
+load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+jwt_secret = os.getenv('JWT_SECRET_KEY')
+if not jwt_secret:
+    raise RuntimeError("JWT_SECRET_KEY não encontrada no arquivo .env")
+
+app.config['JWT_SECRET_KEY'] = jwt_secret
 jwt = JWTManager(app)
 
 hashed_password = generate_password_hash("senha123", method="pbkdf2:sha256",)
