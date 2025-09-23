@@ -61,13 +61,21 @@ npm start
 
 4. Acesse no navegador: `http://localhost:3000`
 
-5. Execute o backend (Flask)
+5. **Criar o arquivo `.env` com a chave JWT**
+
+* Crie um arquivo chamado `.env` na raiz do backend (mesma pasta de `app.py`) com o conteúdo:
+
+```
+JWT_SECRET_KEY=uma_chave_super_secreta_aqui
+```
+
+6. Execute o backend (Flask)
 
 ```bash
 python app.py
 ```
 
-6. O backend ficará disponível em: `http://localhost:5000`
+7. O backend ficará disponível em: `http://localhost:5000`
 
 ## 📌 Fluxo de Autenticação
 
