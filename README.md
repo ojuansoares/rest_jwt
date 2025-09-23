@@ -1,5 +1,7 @@
 # API com autenticação JWT
 
+![Image](https://github.com/user-attachments/assets/776c05eb-58ba-4614-aef2-12c651ee41f1)
+
 Uma aplicação React + Flask moderna com sistema de autenticação
 
 ## 🚀 Tecnologias Utilizadas
