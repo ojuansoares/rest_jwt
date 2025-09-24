@@ -1,6 +1,6 @@
 # API com autenticação JWT
 
-![Image](https://github.com/user-attachments/assets/776c05eb-58ba-4614-aef2-12c651ee41f1)
+![Image](https://github.com/user-attachments/assets/7ef90b91-e832-48b8-aa14-b5e4ead01a8b)
 
 Uma aplicação React + Flask moderna com sistema de autenticação
 
@@ -45,7 +45,7 @@ Uma aplicação React + Flask moderna com sistema de autenticação
 
 1. Clone o repositório
 ```bash
-git clone [url-do-repositorio]
+git clone https://github.com/ojuansoares/rest_jwt
 cd rest_jwt
 ```
 
