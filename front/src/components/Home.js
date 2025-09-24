@@ -1,35 +1,67 @@
 "use client"
 
-// Home.js
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
-import "../App.css" // Importa o CSS
+import ServiceModal from "./ServiceModal"
 
 function Home() {
   const [userData, setUserData] = useState(null)
+  const [services, setServices] = useState([])
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingService, setEditingService] = useState(null)
   const navigate = useNavigate()
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem("token")
+    return { Authorization: `Bearer ${token}` }
+  }
+
+  const handleTokenExpiry = (error) => {
+    if (error.response?.status === 401) {
+      const errorMessage = error.response?.data?.msg || error.response?.data?.message || ""
+      if (errorMessage.includes("expired") || errorMessage.includes("Token has expired")) {
+        localStorage.removeItem("token")
+        navigate("/login")
+        return true
+      }
+    }
+    return false
+  }
+
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       const token = localStorage.getItem("token")
       if (!token) {
         navigate("/login")
         return
       }
+
       try {
-        const response = await axios.get("http://localhost:5000/api/profile", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        setUserData(response.data)
+        const [profileResponse, servicesResponse] = await Promise.all([
+          axios.get("http://localhost:5000/api/profile", {
+            headers: getAuthHeaders(),
+          }),
+          axios.get("http://localhost:5000/api/services", {
+            headers: getAuthHeaders(),
+          }),
+        ])
+
+        setUserData(profileResponse.data)
+        setServices(servicesResponse.data)
       } catch (err) {
-        setError("Erro ao buscar dados do usuário. Faça login novamente.")
-        localStorage.removeItem("token")
-        navigate("/login")
+        if (!handleTokenExpiry(err)) {
+          setError("Erro ao carregar dados. Faça login novamente.")
+          localStorage.removeItem("token")
+          navigate("/login")
+        }
+      } finally {
+        setLoading(false)
       }
     }
-    fetchProfile()
+    fetchData()
   }, [navigate])
 
   const handleLogout = () => {
@@ -37,15 +69,65 @@ function Home() {
     navigate("/login")
   }
 
-  if (error) {
-    return (
-      <div className="loading-container">
-        <div className="error-message">{error}</div>
-      </div>
-    )
+  const handleCreateService = async (serviceData) => {
+    try {
+      const response = await axios.post("http://localhost:5000/api/services", serviceData, {
+        headers: getAuthHeaders(),
+      })
+      setServices([...services, response.data])
+      setIsModalOpen(false)
+    } catch (err) {
+      if (!handleTokenExpiry(err)) {
+        console.error("Erro ao criar serviço:", err)
+        alert("Erro ao criar serviço. Tente novamente.")
+      }
+    }
   }
 
-  if (!userData) {
+  const handleUpdateService = async (serviceData) => {
+    try {
+      const response = await axios.put("http://localhost:5000/api/services", serviceData, {
+        headers: getAuthHeaders(),
+      })
+      setServices(services.map((s) => (s.id === serviceData.id ? response.data : s)))
+      setIsModalOpen(false)
+      setEditingService(null)
+    } catch (err) {
+      if (!handleTokenExpiry(err)) {
+        console.error("Erro ao atualizar serviço:", err)
+        alert("Erro ao atualizar serviço. Tente novamente.")
+      }
+    }
+  }
+
+  const handleDeleteService = async (serviceId) => {
+    if (!confirm("Tem certeza que deseja excluir este serviço?")) return
+
+    try {
+      await axios.delete("http://localhost:5000/api/services", {
+        headers: getAuthHeaders(),
+        data: { id: serviceId },
+      })
+      setServices(services.filter((s) => s.id !== serviceId))
+    } catch (err) {
+      if (!handleTokenExpiry(err)) {
+        console.error("Erro ao excluir serviço:", err)
+        alert("Erro ao excluir serviço. Tente novamente.")
+      }
+    }
+  }
+
+  const openEditModal = (service) => {
+    setEditingService(service)
+    setIsModalOpen(true)
+  }
+
+  const openCreateModal = () => {
+    setEditingService(null)
+    setIsModalOpen(true)
+  }
+
+  if (loading) {
     return (
       <div className="loading-container">
         <div>
@@ -56,57 +138,107 @@ function Home() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="loading-container">
+        <div className="error-message">{error}</div>
+      </div>
+    )
+  }
+
   return (
     <div className="home-container">
       <header className="home-header">
         <div className="header-content">
-          <div className="logo">Dashboard</div>
-          <button onClick={handleLogout} className="logout-button">
-            Sair
-          </button>
+          <div className="logo">
+            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24" className="logo-icon">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            Services Dashboard
+          </div>
+          <div className="header-actions">
+            <span className="user-info">Olá, {userData?.loggedInAs}</span>
+            <button onClick={handleLogout} className="logout-button">
+              Sair
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="home-main">
-        <section className="welcome-section">
-          <h1 className="welcome-title">Olá, {userData.loggedInAs}! 👋</h1>
-          <p className="welcome-message">{userData.message}</p>
-        </section>
-
-        <div className="dashboard-grid">
-          <div className="dashboard-card">
-            <div className="card-icon">
-              <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-            </div>
-            <h3 className="card-title">Sistema Ativo</h3>
-            <p className="card-description">
-              Sua sessão está ativa e todos os sistemas estão funcionando perfeitamente.
-            </p>
+        <div className="services-header">
+          <div className="services-title-section">
+            <h1 className="services-title">Gerenciar Serviços</h1>
+            <p className="services-subtitle">Gerencie todos os seus serviços em um só lugar</p>
           </div>
-
-          <div className="dashboard-card">
-            <div className="card-icon">
-              <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
-                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-              </svg>
-            </div>
-            <h3 className="card-title">Dados Seguros</h3>
-            <p className="card-description">Seus dados estão protegidos com criptografia de ponta a ponta.</p>
-          </div>
-
-          <div className="dashboard-card">
-            <div className="card-icon">
-              <svg width="24" height="24" fill="white" viewBox="0 0 24 24">
-                <path d="M9 11H7v6h2v-6zm4 0h-2v6h2v-6zm4 0h-2v6h2v-6zm2.5-9H19v2h-1.5v16.5c0 1.1-.9 2-2 2h-11c-1.1 0-2-.9-2-2V4H1V2h3.5c0-1.1.9-2 2-2h7c1.1 0 2 .9 2 2zm-3.5 0h-5v16h5V2z" />
-              </svg>
-            </div>
-            <h3 className="card-title">Performance</h3>
-            <p className="card-description">Sistema otimizado para máxima performance e velocidade.</p>
-          </div>
+          <button onClick={openCreateModal} className="create-button">
+            <svg width="1" height="20" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2v20M2 12h20" />
+            </svg>
+            Novo Serviço
+          </button>
         </div>
+
+        {services.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <svg width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <h3 className="empty-title">Nenhum serviço cadastrado</h3>
+            <p className="empty-description">Comece criando seu primeiro serviço clicando no botão acima.</p>
+          </div>
+        ) : (
+          <div className="services-grid">
+            {services.map((service) => (
+              <div key={service.id} className="service-card">
+                <div className="service-header">
+                  <div className="service-icon">
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <div className="service-actions">
+                    <button onClick={() => openEditModal(service)} className="action-button edit-button" title="Editar">
+                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteService(service.id)}
+                      className="action-button delete-button"
+                      title="Excluir"
+                    >
+                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="service-content">
+                  <h3 className="service-name">{service.name}</h3>
+                  <p className="service-description">{service.description}</p>
+                </div>
+                <div className="service-footer">
+                  <span className="service-id">ID: {service.id}</span>
+                  <span className="service-status">Ativo</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
+
+      <ServiceModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false)
+          setEditingService(null)
+        }}
+        onSubmit={editingService ? handleUpdateService : handleCreateService}
+        service={editingService}
+      />
     </div>
   )
 }

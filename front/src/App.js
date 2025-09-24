@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import Home from "./components/Home"
 import Login from "./components/Login"
-import "./App.css" // Importa o CSS
+import "./App.css"
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token")

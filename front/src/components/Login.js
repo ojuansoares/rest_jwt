@@ -1,39 +1,32 @@
 "use client"
 
-// Login.js
 import { useState } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
-import "../App.css" // Importa o CSS
 
 function Login() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setLoading(true)
     setError("")
-    setIsLoading(true)
 
     try {
       const response = await axios.post("http://localhost:5000/api/login", {
-        username: username,
-        password: password,
+        username,
+        password,
       })
-
       localStorage.setItem("token", response.data.access_token)
       navigate("/")
     } catch (err) {
-      if (err.response && err.response.status === 401) {
-        setError("Usuário ou senha inválidos")
-      } else {
-        setError("Erro no servidor. Tente novamente mais tarde.")
-      }
+      setError(err.response?.data?.msg || "Erro ao fazer login")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -41,11 +34,11 @@ function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1 className="login-title">Bem-vindo de volta</h1>
-          <p className="login-subtitle">Entre na sua conta para continuar</p>
+          <h1 className="login-title">Bem-vindo</h1>
+          <p className="login-subtitle">Faça login para acessar o dashboard</p>
         </div>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label className="form-label">Usuário</label>
             <input
@@ -70,11 +63,11 @@ function Login() {
             />
           </div>
 
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="login-button" disabled={isLoading}>
-            {isLoading ? "Entrando..." : "Entrar"}
+          <button type="submit" className="login-button" disabled={loading}>
+            {loading ? "Entrando..." : "Entrar"}
           </button>
+
+          {error && <div className="error-message">{error}</div>}
         </form>
       </div>
     </div>
