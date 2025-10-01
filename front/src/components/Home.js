@@ -21,12 +21,12 @@ function Home() {
 
   const handleTokenExpiry = (error) => {
     if (error.response?.status === 401) {
-      const errorMessage = error.response?.data?.msg || error.response?.data?.message || ""
-      if (errorMessage.includes("expired") || errorMessage.includes("Token has expired")) {
-        localStorage.removeItem("token")
-        navigate("/login")
-        return true
-      }
+        const errorMessage = error.response?.data?.msg || error.response?.data?.message || ""
+        if (errorMessage.includes("expired") || errorMessage.includes("Token has expired")) {
+            localStorage.removeItem("token")
+            navigate("/login")
+            return true
+        }
     }
     return false
   }
@@ -40,19 +40,25 @@ function Home() {
       }
 
       try {
-        const [profileResponse, servicesResponse] = await Promise.all([
-          axios.get("http://localhost:5000/api/profile", {
-            headers: getAuthHeaders(),
-          }),
-          axios.get("http://localhost:5000/api/services", {
-            headers: getAuthHeaders(),
-          }),
-        ])
-
+        const profileResponse = await axios.get("http://localhost:5000/api/profile", {
+          headers: getAuthHeaders(),
+        })
         setUserData(profileResponse.data)
-        setServices(servicesResponse.data)
+
+        if (profileResponse.data.role === "admin") {
+          const servicesResponse = await axios.get("http://localhost:5000/api/services", {
+            headers: getAuthHeaders(),
+          })
+          setServices(servicesResponse.data)
+        } else {
+          setServices([])
+        }
       } catch (err) {
-        if (!handleTokenExpiry(err)) {
+        if (handleTokenExpiry(err)) return
+
+        if (err.response?.status === 403) {
+          setError("Você não tem permissão para ver esta página.")
+        } else {
           setError("Erro ao carregar dados. Faça login novamente.")
           localStorage.removeItem("token")
           navigate("/login")
@@ -68,7 +74,6 @@ function Home() {
     localStorage.removeItem("token")
     navigate("/login")
   }
-
   const handleCreateService = async (serviceData) => {
     try {
       const response = await axios.post("http://localhost:5000/api/services", serviceData, {
@@ -83,7 +88,6 @@ function Home() {
       }
     }
   }
-
   const handleUpdateService = async (serviceData) => {
     try {
       const response = await axios.put("http://localhost:5000/api/services", serviceData, {
@@ -99,7 +103,6 @@ function Home() {
       }
     }
   }
-
   const handleDeleteService = async (serviceId) => {
     if (!confirm("Tem certeza que deseja excluir este serviço?")) return
 
@@ -116,12 +119,10 @@ function Home() {
       }
     }
   }
-
   const openEditModal = (service) => {
     setEditingService(service)
     setIsModalOpen(true)
   }
-
   const openCreateModal = () => {
     setEditingService(null)
     setIsModalOpen(true)
@@ -137,7 +138,6 @@ function Home() {
       </div>
     )
   }
-
   if (error) {
     return (
       <div className="loading-container">
@@ -157,7 +157,7 @@ function Home() {
             Services Dashboard
           </div>
           <div className="header-actions">
-            <span className="user-info">Olá, {userData?.loggedInAs}</span>
+            <span className="user-info">Olá, {userData?.loggedInAs} ({userData?.role})</span>
             <button onClick={handleLogout} className="logout-button">
               Sair
             </button>
@@ -169,17 +169,28 @@ function Home() {
         <div className="services-header">
           <div className="services-title-section">
             <h1 className="services-title">Gerenciar Serviços</h1>
-            <p className="services-subtitle">Gerencie todos os seus serviços em um só lugar</p>
+            <p className="services-subtitle">
+              {userData?.role === "admin"
+                ? "Gerencie todos os seus serviços em um só lugar"
+                : "Você está visualizando como convidado."}
+            </p>
           </div>
-          <button onClick={openCreateModal} className="create-button">
-            <svg width="1" height="20" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2v20M2 12h20" />
-            </svg>
-            Novo Serviço
-          </button>
+          {userData?.role === "admin" && (
+            <button onClick={openCreateModal} className="create-button">
+                <svg width="1" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2v20M2 12h20" />
+                </svg>
+              Novo Serviço
+            </button>
+          )}
         </div>
 
-        {services.length === 0 ? (
+        {userData?.role !== "admin" ? (
+          <div className="empty-state">
+            <h3 className="empty-title">Acesso Restrito</h3>
+            <p className="empty-description">Você não tem permissão para gerenciar serviços.</p>
+          </div>
+        ) : services.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">
               <svg width="64" height="64" fill="currentColor" viewBox="0 0 24 24">
@@ -199,22 +210,28 @@ function Home() {
                       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                     </svg>
                   </div>
-                  <div className="service-actions">
-                    <button onClick={() => openEditModal(service)} className="action-button edit-button" title="Editar">
-                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                      </svg>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteService(service.id)}
-                      className="action-button delete-button"
-                      title="Excluir"
-                    >
-                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                      </svg>
-                    </button>
-                  </div>
+                  {userData?.role === "admin" && (
+                    <div className="service-actions">
+                      <button
+                        onClick={() => openEditModal(service)}
+                        className="action-button edit-button"
+                        title="Editar"
+                      >
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteService(service.id)}
+                        className="action-button delete-button"
+                        title="Excluir"
+                      >
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="service-content">
                   <h3 className="service-name">{service.name}</h3>
