@@ -72,7 +72,19 @@ npm start
 JWT_SECRET_KEY=uma_chave_super_secreta_aqui
 ```
 
-6. Execute o backend (Flask)
+6. Entre no ambiente virtual
+
+```bash
+(windows)
+python -m venv .venv && .venv\Scripts\activate
+```
+
+```bash
+(linux)
+python3 -m venv .venv && source .venv/bin/activate
+```
+
+7. Execute o backend (Flask)
 
 ```bash
 cd back
@@ -80,7 +92,7 @@ pip install -r requirements.txt
 flask run
 ```
 
-7. O backend ficará disponível em: `http://localhost:5000`
+8. O backend ficará disponível em: `http://localhost:5000`
 
 ## 📌 Fluxo de Autenticação
 
